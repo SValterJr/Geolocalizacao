@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Previsão do Tempo</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="light">
+
+<header>
+    <h1>Previsão do Tempo</h1>
+    <button id="toggleTheme">🌙</button>
+</header>
+
+<section class="search-section">
+    <input type="text" id="cityInput" placeholder="Buscar cidade...">
+    <button id="searchBtn">Buscar</button>
+    <button id="geoBtn">📍 Usar minha localização</button>
+</section>
+
+<section id="currentWeather" class="card">
+    <h2>Clima Atual</h2>
+    <div id="currentContent">Digite uma cidade para começar.</div>
+</section>
+
+<section id="forecast" class="forecast-grid"></section>
+
+<section class="charts">
+    <canvas id="tempChart"></canvas>
+    <canvas id="humidityChart"></canvas>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
