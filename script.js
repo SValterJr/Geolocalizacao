@@ -1,6 +1,6 @@
 const API_KEY = "285cfcb99348a0bb57cf8940b4310531"; 
 
-// Seletores de Elementos
+// Seletores
 const cityInput = document.getElementById("cityInput");
 const searchBtn = document.getElementById("searchBtn");
 const geoBtn = document.getElementById("geoBtn");
@@ -10,48 +10,45 @@ const forecastContainer = document.getElementById("forecast");
 
 let tempChart, humidityChart;
 
-// --- 1. Funções de Inicialização e Eventos ---
-
 function initApp() {
-    // Event Listeners
     searchBtn.onclick = () => getWeather(cityInput.value);
     
-    // Adicionar suporte para pressionar ENTER no campo de busca
     cityInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-            getWeather(cityInput.value);
-        }
+        if (e.key === "Enter") getWeather(cityInput.value);
     });
 
-    // Evento de Geolocalização
     geoBtn.onclick = () => {
         if (navigator.geolocation) {
-            currentContent.innerHTML = "Buscando sua localização...";
+            setLoadingState();
             navigator.geolocation.getCurrentPosition(getGeoWeather, handleGeoError);
         } else {
-            currentContent.textContent = "Geolocalização não é suportada por este navegador.";
+            alert("Geolocalização não suportada.");
         }
     };
 
-    // Evento de Tema
     toggleTheme.onclick = () => {
         document.body.classList.toggle("dark");
-        toggleTheme.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+        const icon = toggleTheme.querySelector("i");
+        if(document.body.classList.contains("dark")) {
+            icon.classList.replace("ph-moon", "ph-sun");
+        } else {
+            icon.classList.replace("ph-sun", "ph-moon");
+        }
+        updateChartsTheme();
     };
 
-    // Tentar carregar a previsão do tempo para uma cidade padrão ao iniciar (opcional)
-    getWeather("Porto Alegre"); 
+    // Inicializa com uma cidade para não ficar vazio
+    getWeather("Brasília");
 }
 
-// --- 2. Funções de Busca de Dados ---
+// UI Helpers
+function setLoadingState() {
+    currentContent.innerHTML = `<div class="empty-state"><p>Carregando...</p></div>`;
+}
 
 async function getWeather(city) {
-    if (!city) {
-        currentContent.textContent = "Por favor, digite o nome de uma cidade.";
-        return;
-    }
-    
-    currentContent.textContent = "Buscando dados de " + city + "...";
+    if (!city) return;
+    setLoadingState();
 
     const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&lang=pt_br&appid=${API_KEY}`;
     
@@ -60,10 +57,7 @@ async function getWeather(city) {
         const data = await res.json();
 
         if (data.cod !== "200") {
-            currentContent.textContent = "❌ Cidade não encontrada. Verifique o nome ou sua API Key.";
-            forecastContainer.innerHTML = "";
-            if (tempChart) tempChart.destroy();
-            if (humidityChart) humidityChart.destroy();
+            currentContent.innerHTML = `<div class="empty-state"><p>Cidade não encontrada.</p></div>`;
             return;
         }
 
@@ -71,174 +65,152 @@ async function getWeather(city) {
         displayForecast(data);
         updateCharts(data);
     } catch (error) {
-        console.error("Erro ao buscar dados da API:", error);
-        currentContent.textContent = "❌ Ocorreu um erro na comunicação com o servidor de clima.";
+        console.error(error);
+        currentContent.innerHTML = `<div class="empty-state"><p>Erro na conexão.</p></div>`;
     }
 }
 
 function getGeoWeather(pos) {
     const { latitude, longitude } = pos.coords;
-    currentContent.textContent = "Buscando dados de sua localização...";
+    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
     
-    const cityUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${API_KEY}`;
-    
-    fetch(cityUrl)
-        .then(r => r.json())
-        .then(data => {
-            if (data.cod !== "200") {
-                currentContent.textContent = "❌ Não foi possível obter dados para sua localização.";
-                return;
-            }
-            displayCurrent(data);
-            displayForecast(data);
-            updateCharts(data);
-        })
-        .catch(error => {
-            console.error("Erro ao buscar dados de geolocalização:", error);
-            currentContent.textContent = "❌ Ocorreu um erro ao buscar o clima pela localização.";
-        });
+    fetch(url).then(r => r.json()).then(data => {
+        if (data.cod !== "200") return;
+        displayCurrent(data);
+        displayForecast(data);
+        updateCharts(data);
+    });
 }
 
 function handleGeoError(error) {
-    let message = "Erro ao obter localização.";
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            message = "Acesso à localização negado pelo usuário.";
-            break;
-        case error.POSITION_UNAVAILABLE:
-            message = "Informações de localização indisponíveis.";
-            break;
-        case error.TIMEOUT:
-            message = "Tempo limite para obter localização excedido.";
-            break;
-    }
-    currentContent.textContent = `❌ ${message}`;
+    alert("Erro ao obter localização: " + error.message);
 }
-
-// --- 3. Funções de Apresentação de Dados ---
 
 function displayCurrent(data) {
     const c = data.list[0];
     const iconUrl = `https://openweathermap.org/img/wn/${c.weather[0].icon}@4x.png`;
     
+    // Novo layout do card principal
     currentContent.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-            <div>
-                <h3>${data.city.name}</h3>
-                <p><strong>${c.main.temp.toFixed(1)}°C</strong></p>
-                <p>${c.weather[0].description.charAt(0).toUpperCase() + c.weather[0].description.slice(1)}</p>
-                <p>Mín: ${c.main.temp_min.toFixed(1)}°C / Máx: ${c.main.temp_max.toFixed(1)}°C</p>
-                <p>Vento: ${c.wind.speed.toFixed(1)} m/s</p>
-                <p>Umidade: ${c.main.humidity}%</p>
+        <div style="flex: 1; z-index: 2;">
+            <div class="weather-header">
+                <h2>${data.city.name}</h2>
+                <p>${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'})}</p>
             </div>
-            <img src="${iconUrl}" alt="${c.weather[0].description}" style="width: 150px; height: 150px; flex-shrink: 0;">
+            <div class="weather-tempe" style="">
+                <h1 class="weather-temp">${Math.round(c.main.temp)}°</h1>
+                <img src="${iconUrl}" alt="Icone" style="width: 100px; height: 100px;">
+            </div>
+            <p class="weather-desc">${c.weather[0].description}</p>
+            
+            <div class="weather-details">
+                <div class="detail-item">
+                    <span>Vento</span>
+                    <span>${c.wind.speed.toFixed(1)} km/h</span>
+                </div>
+                <div class="detail-item">
+                    <span>Umidade</span>
+                    <span>${c.main.humidity}%</span>
+                </div>
+                <div class="detail-item">
+                    <span>Sensação</span>
+                    <span>${Math.round(c.main.feels_like)}°</span>
+                </div>
+            </div>
         </div>
     `;
 }
 
 function displayForecast(data) {
     forecastContainer.innerHTML = "";
-
-    // Filtra para um item por dia (previsão das 12:00) e garante no máximo 5 dias
-    const daily = data.list
-        .filter(item => item.dt_txt.includes("12:00:00"))
-        .slice(0, 5);
+    const daily = data.list.filter(item => item.dt_txt.includes("12:00:00")).slice(0, 5);
 
     daily.forEach(d => {
+        const date = new Date(d.dt_txt);
+        const dayName = date.toLocaleDateString("pt-BR", {weekday: "short"}).replace('.', '');
+        
         forecastContainer.innerHTML += `
             <div class="forecast-item">
-                <h4>${new Date(d.dt_txt).toLocaleDateString("pt-BR",{weekday:"short"})}</h4>
-                <img src="https://openweathermap.org/img/wn/${d.weather[0].icon}@2x.png" alt="${d.weather[0].description}">
-                <p>${d.main.temp.toFixed(1)}°C</p>
-                <p>${d.weather[0].description}</p>
+                <span class="forecast-date">${dayName}</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="https://openweathermap.org/img/wn/${d.weather[0].icon}.png" class="forecast-icon">
+                    <span style="font-size: 0.9rem; color: var(--text-secondary)">${d.weather[0].main}</span>
+                </div>
+                <span class="forecast-temp">${Math.round(d.main.temp)}°</span>
             </div>
         `;
     });
 }
 
-// --- 4. Funções de Gráficos ---
-
 function updateCharts(data) {
-    // Usa todos os 40 pontos de dados para gráficos de linha detalhados
-    const allData = data.list;
-
-    // Rótulos de tempo a cada 3 horas
+    const allData = data.list.slice(0, 12); // Pega apenas as próximas ~36 horas para o gráfico não ficar poluido
     const labels = allData.map(d => 
         new Date(d.dt_txt).toLocaleTimeString("pt-BR", {hour: '2-digit', minute: '2-digit'})
     );
     const temps = allData.map(d => d.main.temp);
     const humidity = allData.map(d => d.main.humidity);
 
-    // Destroi gráficos antigos antes de criar novos
     if (tempChart) tempChart.destroy();
     if (humidityChart) humidityChart.destroy();
 
-    // Configurações do Gráfico
+    const isDark = document.body.classList.contains("dark");
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
     const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
         scales: {
             y: {
-                beginAtZero: false,
-                grid: {
-                    color: document.body.classList.contains("dark") ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                },
-                ticks: {
-                     color: document.body.classList.contains("dark") ? '#f3f4f6' : '#1a202c'
-                }
+                grid: { color: gridColor },
+                ticks: { color: textColor }
             },
             x: {
-                grid: {
-                    display: false
-                },
-                ticks: {
-                     color: document.body.classList.contains("dark") ? '#f3f4f6' : '#1a202c'
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                labels: {
-                    color: document.body.classList.contains("dark") ? '#f3f4f6' : '#1a202c'
-                }
+                grid: { display: false },
+                ticks: { color: textColor }
             }
         }
     };
 
-    // Gráfico de Temperatura
     tempChart = new Chart(document.getElementById("tempChart"), {
         type: "line",
         data: {
             labels,
             datasets: [{
-                label: "Temperatura (°C)",
+                label: "Temp (°C)",
                 data: temps,
-                borderColor: "#ff9800",
+                borderColor: "#8b5cf6",
+                backgroundColor: "rgba(139, 92, 246, 0.1)",
+                borderWidth: 3,
                 tension: 0.4,
-                fill: false,
-                pointBackgroundColor: "#ff9800",
+                fill: true,
+                pointRadius: 0,
+                pointHoverRadius: 6
             }]
         },
         options: commonOptions
     });
 
-    // Gráfico de Umidade
     humidityChart = new Chart(document.getElementById("humidityChart"), {
-        type: "line",
+        type: "bar",
         data: {
             labels,
             datasets: [{
                 label: "Umidade (%)",
                 data: humidity,
-                borderColor: "#2196f3",
-                tension: 0.4,
-                fill: false,
-                pointBackgroundColor: "#2196f3",
+                backgroundColor: "#3b82f6",
+                borderRadius: 4
             }]
         },
         options: commonOptions
     });
 }
 
-// Chamada para Iniciar a Aplicação após o HTML carregar
+function updateChartsTheme() {
+    if(tempChart) updateCharts({list: []}); // Hack simples para forçar re-render se necessário, ou apenas deixe o usuário buscar de novo.
+}
+
 document.addEventListener("DOMContentLoaded", initApp);

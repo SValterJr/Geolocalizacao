@@ -1,38 +1,81 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard de Previsão do Tempo</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Majuu's Coutinhos Clima-Tempo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
-<body class="light">
+<body>
 
-<header>
-    <h1>Previsão do Tempo</h1>
-    <button id="toggleTheme">🌙</button>
-</header>
+    <div class="dashboard-container">
+        <header>
+            <div class="logo">
+                <i class="ph-fill ph-cloud-sun"></i>
+                <h1> Previsão da TinhoCou JuMa </h1>
+            </div>
+            <button id="toggleTheme" class="icon-btn" aria-label="Alternar Tema">
+                <i class="ph-fill ph-moon"></i>
+            </button>
+        </header>
 
-<section class="search-section">
-    <input type="text" id="cityInput" placeholder="Buscar cidade...">
-    <button id="searchBtn">Buscar</button>
-    <button id="geoBtn">📍 Usar minha localização</button>
-</section>
+        <main>
+            <section class="search-section card">
+                <div class="search-group">
+                    <i class="ph ph-magnifying-glass search-icon"></i>
+                    <input type="text" id="cityInput" placeholder="Buscar cidade (ex: São Paulo)...">
+                </div>
+                <div class="actions">
+                    <button id="searchBtn" class="primary-btn">Buscar</button>
+                    <button id="geoBtn" class="secondary-btn">
+                        <i class="ph-fill ph-map-pin"></i> Localização
+                    </button>
+                </div>
+            </section>
 
-<section id="currentWeather" class="card">
-    <h2>Clima Atual</h2>
-    <div id="currentContent">Digite uma cidade para começar.</div>
-</section>
+            <div class="content-grid">
+                <section id="currentWeather" class="card highlight-card">
+                    <div id="currentContent" class="empty-state">
+                        <i class="ph ph-globe-hemisphere-west"></i>
+                        <p>Pesquise uma cidade para ver a previsão.</p>
+                    </div>
+                </section>
 
-<section id="forecast" class="forecast-grid"></section>
+                <section class="forecast-section">
+                    <h3>Próximos 5 Dias</h3>
+                    <div id="forecast" class="forecast-list"></div>
+                </section>
+            </div>
 
-<section class="charts">
-    <canvas id="tempChart"></canvas>
-    <canvas id="humidityChart"></canvas>
-</section>
+            <section class="charts-grid">
+                <div class="card chart-container">
+                    <h3>Variação de Temperatura</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-container">
+                    <h3>Umidade Relativa</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
 
-<script src="script.js"></script>
+        <footer>
+            <hr>
+            <br>
+            <p>© 2025 Adivinhação do Tempo • Dados OpenWeatherMap </p>
+              <br>
+            </p>
+            <p> Desenvolvido por Valter no Curso de Front-End Senai </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
